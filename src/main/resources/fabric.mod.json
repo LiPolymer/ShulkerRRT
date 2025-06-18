@@ -8,8 +8,8 @@
 		"LiPolymer"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/LiPolymer/ShulkerRRT",
+		"sources": "https://github.com/LiPolymer/ShulkerRRT"
 	},
 	"license": "GPLv3",
 	"icon": "assets/srrt/icon.png",
