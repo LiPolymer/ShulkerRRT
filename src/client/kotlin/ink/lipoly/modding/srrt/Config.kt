@@ -5,5 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Config(
     var isShulkerRDKManaged: Boolean = false,
-    var monitorDefaultPath: Boolean = true
+    var monitorDefaultPath: Boolean = true,
+    var monitorPaxiPath: Boolean = true,
+    var reloadOnFocusGained: Boolean = false
 )

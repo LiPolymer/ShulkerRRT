@@ -11,6 +11,8 @@ import kotlinx.serialization.json.Json
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.MinecraftClient
+import org.lwjgl.glfw.GLFW
+import org.lwjgl.glfw.GLFWWindowFocusCallbackI
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.FileSystems
@@ -71,7 +73,7 @@ object ShulkerRRTClient : ClientModInitializer {
 					targetList.add(File(defaultPath))
 					targetList = (targetList + listAllDirectories(File(defaultPath))).distinct().toMutableList()
 				}
-				if (FabricLoader.getInstance().isModLoaded("paxi")){
+				if (config.monitorPaxiPath && FabricLoader.getInstance().isModLoaded("paxi")){
 					safeCreateDir(paxiPath)
 					targetList.add(File(paxiPath))
 					targetList = (targetList + listAllDirectories(File(paxiPath))).distinct().toMutableList()
@@ -107,6 +109,24 @@ object ShulkerRRTClient : ClientModInitializer {
 					if (!key.reset()) {
 						logger.info("监听终止")
 						break
+					}
+				}
+			}
+		}
+
+		if (config.reloadOnFocusGained){
+			scope.launch {
+				var isPrev = true
+				while (isActive){
+					try{
+						val isFocused = MinecraftClient.getInstance().isWindowFocused
+						if (isFocused && !isPrev){
+							logger.info("Focus ReGained Reloading...")
+							MinecraftClient.getInstance().reloadResources()
+						}
+						isPrev = isFocused
+					} catch (e: Exception){
+						//ignored
 					}
 				}
 			}
