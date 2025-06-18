@@ -1,0 +1,48 @@
+{
+	"schemaVersion": 1,
+	"id": "srrt",
+	"version": "${version}",
+	"name": "ShulkerRRT",
+	"description": "A simple auto-reload tool for RP developers and ShulkerRDK",
+	"authors": [
+		"LiPolymer"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "GPLv3",
+	"icon": "assets/srrt/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"main": [
+			{
+				"value": "ink.lipoly.modding.srrt.ShulkerRRT",
+				"adapter": "kotlin"
+			}
+		],
+		"client": [
+			{
+				"value": "ink.lipoly.modding.srrt.ShulkerRRTClient",
+				"adapter": "kotlin"
+			}
+		]
+	},
+	"mixins": [
+		"srrt.mixins.json",
+		{
+			"config": "srrt.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	},
+	"suggests": {
+		"paxi": "*"
+	}
+}
