@@ -5,6 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.loader.api.FabricLoader
@@ -18,6 +20,7 @@ import java.nio.file.Paths
 import java.nio.file.StandardWatchEventKinds
 import java.nio.file.WatchService
 import kotlin.io.path.Path
+import kotlin.time.Duration
 
 
 object ShulkerRRTClient : ClientModInitializer {
@@ -59,24 +62,31 @@ object ShulkerRRTClient : ClientModInitializer {
 					delay(1000)
 				}
 			} else {
+				var targetList = mutableListOf<File>()
 				val defaultPath = "./resourcepacks"
 				val paxiPath = "./config/paxi/resourcepacks"
 				val watchService = FileSystems.getDefault().newWatchService()
 				if (config.monitorDefaultPath){
 					safeCreateDir(defaultPath)
-					registerWatcher(defaultPath,watchService)
+					targetList.add(File(defaultPath))
+					targetList = (targetList + listAllDirectories(File(defaultPath))).distinct().toMutableList()
 				}
 				if (FabricLoader.getInstance().isModLoaded("paxi")){
 					safeCreateDir(paxiPath)
-					registerWatcher(paxiPath,watchService)
+					targetList.add(File(paxiPath))
+					targetList = (targetList + listAllDirectories(File(paxiPath))).distinct().toMutableList()
+				}
+				for (t: File in targetList){
+					println("正在记录" + t.path)
+					registerWatcher(t.path,watchService)
 				}
 				logger.info("开始监听")
+				var lastUpdate = System.currentTimeMillis()
 				while (isActive) {
 					val key = watchService.take()
 					key.pollEvents().forEach { event ->
 						val kind = event.kind()
 						val fileName = event.context() as Path
-						if (kind === StandardWatchEventKinds.OVERFLOW) return@forEach
 						val eventType = when (kind) {
 							StandardWatchEventKinds.ENTRY_CREATE -> "创建"
 							StandardWatchEventKinds.ENTRY_MODIFY -> "修改"
@@ -85,7 +95,11 @@ object ShulkerRRTClient : ClientModInitializer {
 						}
 						logger.info("检测到文件 ${fileName.fileName}: $eventType")
 						try {
-							MinecraftClient.getInstance().reloadResources()
+							val delta = kotlin.math.abs(System.currentTimeMillis() - lastUpdate)
+							if (delta >= 3000){
+								MinecraftClient.getInstance().reloadResources()
+								lastUpdate = System.currentTimeMillis()
+							}
 						} catch (e: Exception){
 							logger.error(e.message)
 						}
@@ -114,7 +128,28 @@ object ShulkerRRTClient : ClientModInitializer {
 			watchService,
 			StandardWatchEventKinds.ENTRY_CREATE,
 			StandardWatchEventKinds.ENTRY_MODIFY,
-			StandardWatchEventKinds.ENTRY_DELETE
+			StandardWatchEventKinds.ENTRY_DELETE,
+			StandardWatchEventKinds.OVERFLOW
 		)
+	}
+
+	private fun listAllDirectories(rootDir: File): List<File> {
+		val directories = mutableListOf<File>()
+		if (!rootDir.isDirectory) {
+			return directories
+		}
+		val queue = ArrayDeque<File>().apply {
+			add(rootDir)
+		}
+		while (queue.isNotEmpty()) {
+			val currentDir = queue.removeFirst()
+			currentDir.listFiles()?.forEach { file ->
+				if (file.isDirectory) {
+					directories.add(file)
+					queue.add(file)
+				}
+			}
+		}
+		return directories
 	}
 }
