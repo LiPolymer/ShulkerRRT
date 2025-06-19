@@ -5,14 +5,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.MinecraftClient
-import org.lwjgl.glfw.GLFW
-import org.lwjgl.glfw.GLFWWindowFocusCallbackI
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.FileSystems
@@ -22,7 +18,6 @@ import java.nio.file.Paths
 import java.nio.file.StandardWatchEventKinds
 import java.nio.file.WatchService
 import kotlin.io.path.Path
-import kotlin.time.Duration
 
 
 object ShulkerRRTClient : ClientModInitializer {
@@ -55,7 +50,7 @@ object ShulkerRRTClient : ClientModInitializer {
 					if (Files.exists(flagPath)){
 						Files.delete(Path("./reload.flag"))
 						try {
-							logger.info("Reloading...")
+							logger.info("Flag Detected, Reloading...")
 							MinecraftClient.getInstance().reloadResources()
 						} catch (e: Exception){
 							logger.error(e.message)
@@ -64,25 +59,13 @@ object ShulkerRRTClient : ClientModInitializer {
 					delay(1000)
 				}
 			} else {
-				var targetList = mutableListOf<File>()
-				val defaultPath = "./resourcepacks"
-				val paxiPath = "./config/paxi/resourcepacks"
 				val watchService = FileSystems.getDefault().newWatchService()
-				if (config.monitorDefaultPath){
-					safeCreateDir(defaultPath)
-					targetList.add(File(defaultPath))
-					targetList = (targetList + listAllDirectories(File(defaultPath))).distinct().toMutableList()
-				}
-				if (config.monitorPaxiPath && FabricLoader.getInstance().isModLoaded("paxi")){
-					safeCreateDir(paxiPath)
-					targetList.add(File(paxiPath))
-					targetList = (targetList + listAllDirectories(File(paxiPath))).distinct().toMutableList()
-				}
+				var targetList = getMonitoringList(config)
 				for (t: File in targetList){
-					println("正在记录" + t.path)
+					logger.info("Recording " + t.path)
 					registerWatcher(t.path,watchService)
 				}
-				logger.info("开始监听")
+				logger.info("Listener started")
 				var lastUpdate = System.currentTimeMillis()
 				while (isActive) {
 					val key = watchService.take()
@@ -90,25 +73,32 @@ object ShulkerRRTClient : ClientModInitializer {
 						val kind = event.kind()
 						val fileName = event.context() as Path
 						val eventType = when (kind) {
-							StandardWatchEventKinds.ENTRY_CREATE -> "创建"
-							StandardWatchEventKinds.ENTRY_MODIFY -> "修改"
-							StandardWatchEventKinds.ENTRY_DELETE -> "删除"
-							else -> "未知"
+							StandardWatchEventKinds.ENTRY_CREATE -> "Create"
+							StandardWatchEventKinds.ENTRY_MODIFY -> "Modify"
+							StandardWatchEventKinds.ENTRY_DELETE -> "Delete"
+							else -> "Unknown"
 						}
-						logger.info("检测到文件 ${fileName.fileName}: $eventType")
+						logger.info("Entry ${fileName.fileName} detected event $eventType")
 						try {
 							val delta = kotlin.math.abs(System.currentTimeMillis() - lastUpdate)
 							if (delta >= 3000){
+								logger.info("Reloading...")
 								MinecraftClient.getInstance().reloadResources()
 								lastUpdate = System.currentTimeMillis()
 							}
+							val newList = getMonitoringList(config)
+							for (t: File in newList.toSet() - targetList.toSet()){
+								logger.info("Secondary recording " + t.path)
+								registerWatcher(t.path,watchService)
+							}
+							targetList = newList
 						} catch (e: Exception){
 							logger.error(e.message)
 						}
 					}
 					if (!key.reset()) {
-						logger.info("监听终止")
-						break
+						logger.info("A listen point was removed, refactoring the list")
+						targetList = getMonitoringList(config)
 					}
 				}
 			}
@@ -171,5 +161,22 @@ object ShulkerRRTClient : ClientModInitializer {
 			}
 		}
 		return directories
+	}
+
+	private fun getMonitoringList(config: Config): MutableList<File>{
+		var targetList = mutableListOf<File>()
+		val defaultPath = "./resourcepacks"
+		val paxiPath = "./config/paxi/resourcepacks"
+		if (config.monitorDefaultPath){
+			safeCreateDir(defaultPath)
+			targetList.add(File(defaultPath))
+			targetList = (targetList + listAllDirectories(File(defaultPath))).distinct().toMutableList()
+		}
+		if (config.monitorPaxiPath && FabricLoader.getInstance().isModLoaded("paxi")){
+			safeCreateDir(paxiPath)
+			targetList.add(File(paxiPath))
+			targetList = (targetList + listAllDirectories(File(paxiPath))).distinct().toMutableList()
+		}
+		return targetList
 	}
 }
