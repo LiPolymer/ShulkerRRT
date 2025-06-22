@@ -9,6 +9,8 @@ import kotlinx.serialization.json.Json
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.toast.SystemToast
+import net.minecraft.text.Text
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.FileSystems
@@ -58,7 +60,8 @@ object ShulkerRRTClient : ClientModInitializer {
 					}
 					delay(1000)
 				}
-			} else {
+			}
+			else {
 				val watchService = FileSystems.getDefault().newWatchService()
 				var targetList = getMonitoringList(config)
 				for (t: File in targetList){
@@ -83,6 +86,17 @@ object ShulkerRRTClient : ClientModInitializer {
 							val delta = kotlin.math.abs(System.currentTimeMillis() - lastUpdate)
 							if (delta >= 3000){
 								logger.info("Reloading...")
+								val client = MinecraftClient.getInstance()
+								if (config.enableToastNotification){
+									client.toastManager.add(
+										SystemToast.create(
+											client,
+											SystemToast.Type.PERIODIC_NOTIFICATION,
+											Text.literal("ShulkerRTT"),
+											Text.translatable("srrt.reloading.onFileChanged")
+										)
+									)
+								}
 								MinecraftClient.getInstance().reloadResources()
 								lastUpdate = System.currentTimeMillis()
 							}
@@ -103,15 +117,25 @@ object ShulkerRRTClient : ClientModInitializer {
 				}
 			}
 		}
-
 		if (config.reloadOnFocusGained){
 			scope.launch {
 				var isPrev = true
 				while (isActive){
 					try{
-						val isFocused = MinecraftClient.getInstance().isWindowFocused
+						val client = MinecraftClient.getInstance()
+						val isFocused = client.isWindowFocused
 						if (isFocused && !isPrev){
-							logger.info("Focus ReGained Reloading...")
+							if (config.enableToastNotification){
+								client.toastManager.add(
+									SystemToast.create(
+										client,
+										SystemToast.Type.PERIODIC_NOTIFICATION,
+										Text.literal("ShulkerRTT"),
+										Text.translatable("srrt.reloading.onFocusRegained")
+									)
+								)
+							}
+							logger.info("Focus Regained,Reloading...")
 							MinecraftClient.getInstance().reloadResources()
 						}
 						isPrev = isFocused

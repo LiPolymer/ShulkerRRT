@@ -1,0 +1,4 @@
+{
+  "srrt.reloading.onFocusRegained": "Focus Regained, Reloading...",
+  "srrt.reloading.onFileChanged": "Resource was modified, Reloading..."
+}

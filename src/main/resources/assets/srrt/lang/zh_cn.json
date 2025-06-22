@@ -1,0 +1,4 @@
+{
+  "srrt.reloading.onFocusRegained": "焦点回归,正在重载...",
+  "srrt.reloading.onFileChanged": "资源被修改,正在重载..."
+}
