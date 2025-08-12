@@ -14,7 +14,7 @@ A lightweight automatic resource pack reloading tool for Minecraft.
   - All features can be individually enabled/disabled via configuration file
 
 ## Installation Requirements
-- Minecraft 1.21.1
+- Minecraft 1.21.x / 1.20.1
 - Fabric Loader or NeoForge + [Sinytra Connector](https://modrinth.com/mod/connector)
 
 #### Licensed under [GPLv3](https://www.gnu.org/licenses/quick-guide-gplv3.zh-cn.html)
