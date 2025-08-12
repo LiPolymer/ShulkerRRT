@@ -14,7 +14,7 @@
   - 所有功能均可通过配置文件单独启用/禁用
 
 ## 安装要求
-- Minecraft 1.21.1
+- Minecraft 1.21.x (这个分支) / 1.20.1
 - Fabric Loader 或 NeoForge + [Sinytra Connector](https://modrinth.com/mod/connector)
 
 #### 本项目采用 [GPLv3](https://www.gnu.org/licenses/quick-guide-gplv3.zh-cn.html) 获得许可
